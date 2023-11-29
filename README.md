@@ -7,6 +7,15 @@ kafka_exporter
 
 Kafka exporter for Prometheus. For other metrics from Kafka, have a look at the [JMX exporter](https://github.com/prometheus/jmx_exporter).
 
+Fuze/8x8 version
+----------------
+Fuze/8x8 version with these new startup parameters.  This is to let the exporter wait a little bit more while Kafka gets online.
+```
+      --start-retries=1          Number of retries before giving up
+      --retry-interval=0         Time to wait between retry attemps (in seconds)
+```
+We compiled version 1.7.0 using go version 1.20.4.
+
 Table of Contents
 -----------------
 
@@ -147,6 +156,8 @@ This image is configurable using different flags
 | concurrent.enable              | false          | If true, all scrapes will trigger kafka operations otherwise, they will share results. WARN: This should be disabled on large clusters         |
 | topic.workers                  | 100            | Number of topic workers                                                                                                                        |
 | verbosity                      | 0              | Verbosity log level                                                                                                                            |
+| start-retries                  | 1              | Number of retries before giving up                                                                                                             |
+| retry-interval                 | 0              | Time to wait between retry attemps (in seconds)                                                                                                |
 
 ### Notes
 

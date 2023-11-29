@@ -1,6 +1,9 @@
 repository:
     path: github.com/danielqsj/kafka_exporter
 build:
+    binaries:
+        - name: kafka_exporter
+          path: .
     flags: -a -tags netgo
     ldflags: |
         -X github.com/prometheus/common/version.Version={{.Version}}
