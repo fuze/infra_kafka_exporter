@@ -114,6 +114,8 @@ type kafkaOpts struct {
 	allowConcurrent          bool
 	allowAutoTopicCreation   bool
 	verbosityLogLevel        int
+	startRetries             int
+	retryInterval            int
 }
 
 // CanReadCertAndKey returns true if the certificate and key files already exists,
@@ -255,10 +257,26 @@ func NewExporter(opts kafkaOpts, topicFilter string, topicExclude string, groupF
 
 	config.Metadata.AllowAutoTopicCreation = opts.allowAutoTopicCreation
 
-	client, err := sarama.NewClient(opts.uri, config)
+	var client sarama.Client
+	klog.Info(opts.startRetries, " attempts to connect to Kafka...")
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Error Init Kafka Client")
+	for i := opts.startRetries; i >= 1; i-- {
+		client, err = sarama.NewClient(opts.uri, config)
+		klog.Info("Attempt #", i)
+		if err != nil {
+			if i == 1 {
+				return nil, errors.Wrap(err, "Error Init Kafka Client, giving up")
+			} else {
+				klog.Info(errors.Wrap(err, "Error Init Kafka Client, retrying"))
+				if opts.retryInterval != 0 {
+					klog.Info("Waiting ", opts.retryInterval, " seconds before next attempt.")
+				}
+				time.Sleep(time.Duration(opts.retryInterval) * time.Second)
+			}
+		} else {
+			klog.Info("Success!")
+			break
+		}
 	}
 
 	klog.V(TRACE).Infoln("Done Init Clients")
@@ -754,6 +772,8 @@ func main() {
 	toFlagIntVar("topic.workers", "Number of topic workers", 100, "100", &opts.topicWorkers)
 	toFlagBoolVar("kafka.allow-auto-topic-creation", "If true, the broker may auto-create topics that we requested which do not already exist, default is false.", false, "false", &opts.allowAutoTopicCreation)
 	toFlagIntVar("verbosity", "Verbosity log level", 0, "0", &opts.verbosityLogLevel)
+	toFlagIntVar("start-retries", "Number of retries before giving up", 1, "1", &opts.startRetries)
+	toFlagIntVar("retry-interval", "Time to wait between retry attemps (in seconds)", 0, "0", &opts.retryInterval)
 
 	plConfig := plog.Config{}
 	plogflag.AddFlags(kingpin.CommandLine, &plConfig)
